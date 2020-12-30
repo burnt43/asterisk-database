@@ -4,8 +4,20 @@ module AsteriskDatabase
 
     # TODO: change this to host, key
     # so like 'fsa', 'CNAM'
-    def initialize(file_path)
-      @file_path = file_path
+    def initialize(
+      database_key=nil,
+      host='localhost',
+      asterisk_bin: nil,
+      ssh_kex_algorithm: nil
+    )
+      @database_key = database_key
+      @host = host
+
+      @asterisk_bin = asterisk_bin
+
+      @ssh_options = {
+        kex_algorithm: ssh_kex_algorithm
+      }
     end
 
     # instance methods
@@ -18,7 +30,7 @@ module AsteriskDatabase
       number_of_keys = nil
       index = nil
 
-      IO.read(@file_path).lines.each do |line|
+      raw_output.lines.each do |line|
         next unless line.start_with?('/')
 
         state = :looking_for_slash
@@ -82,6 +94,38 @@ module AsteriskDatabase
       end
 
       result
+    end
+
+    private
+
+    def ssh_bin
+      @ssh_bin ||= %x[which ssh].strip
+    end
+
+    def asterisk_bin
+      @asterisk_bin || 'asterisk'
+    end
+
+    def ssh_option_string
+      options = []
+
+      if @ssh_options[:kex_algorithm]
+        options.push("-oKexAlgorithms=+#{@ssh_options[:kex_algorithm]}")
+      end
+
+      options.join(' ')
+    end
+
+    def local?
+      @host == 'localhost'
+    end
+
+    def raw_output
+      if local?
+        ''
+      else
+        %x[#{ssh_bin} #{ssh_option_string} #{@host} "#{asterisk_bin} -rx 'database show #{@database_key}'"].strip
+      end
     end
   end
 end
