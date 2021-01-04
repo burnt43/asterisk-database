@@ -1,6 +1,7 @@
 module AsteriskDatabase
   class Parser
     DATABASE_KEY_VALUE_REGEX = /\A(\/\w+)+\s+:\s+(.*)\z/
+    ESCAPE_SEQUENCE_REGEX = /\A\e\[\d;\d{1,2}(;\d{1,2})?m/
 
     # TODO: change this to host, key
     # so like 'fsa', 'CNAM'
@@ -31,6 +32,8 @@ module AsteriskDatabase
       index = nil
 
       raw_output.lines.each do |line|
+        line.gsub!(ESCAPE_SEQUENCE_REGEX, '')
+
         next unless line.start_with?('/')
 
         state = :looking_for_slash
