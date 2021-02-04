@@ -9,6 +9,8 @@ module AsteriskDatabase
       database_key=nil,
       host='localhost',
       asterisk_bin: nil,
+      ssh_user: nil,
+      ssh_identity_file: nil,
       ssh_kex_algorithm: nil
     )
       @database_key = database_key
@@ -17,6 +19,8 @@ module AsteriskDatabase
       @asterisk_bin = asterisk_bin
 
       @ssh_options = {
+        user: ssh_user,
+        identity_file: ssh_identity_file,
         kex_algorithm: ssh_kex_algorithm
       }
     end
@@ -112,11 +116,23 @@ module AsteriskDatabase
     def ssh_option_string
       options = []
 
+      if @ssh_options[:identity_file]
+        options.push("-i #{@ssh_options[:identity_file]}")
+      end
+
       if @ssh_options[:kex_algorithm]
         options.push("-oKexAlgorithms=+#{@ssh_options[:kex_algorithm]}")
       end
 
       options.join(' ')
+    end
+
+    def ssh_destination
+      if @ssh_options[:user]
+        "#{@ssh_options[:user]}@#{@host}"
+      else
+        @host
+      end
     end
 
     def local?
@@ -127,7 +143,7 @@ module AsteriskDatabase
       if local?
         ''
       else
-        %x[#{ssh_bin} #{ssh_option_string} #{@host} "#{asterisk_bin} -rx 'database show #{@database_key}'"].strip
+        %x[#{ssh_bin} #{ssh_option_string} #{ssh_destination} "#{asterisk_bin} -rx 'database show #{@database_key}'"].strip
       end
     end
   end
