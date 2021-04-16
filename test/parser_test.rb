@@ -1,6 +1,27 @@
 require './test/test_helper.rb'
 
 class ParserTest < Minitest::Test
+  def test_non_cloned_string_bug
+    parser_01 = AsteriskDatabase::Parser.new(
+      'this does not matter'
+    )
+
+    class << parser_01
+      def raw_output
+        "No entry for terminal type \"rxvt-unicode-256color\";\n" \
+        "using dumb terminal settings.\n" \
+        "/FOO/1000                                   : abc               \n" \
+        "/FOO/2000                                   : def               \n" \
+        "2 results found."
+      end
+    end
+
+    result = parser_01.parse
+
+    assert_equal('abc', result.dig('FOO', '1000'))
+    assert_equal('def', result.dig('FOO', '2000'))
+  end
+
   def test_ssh_option_string
     parser_01 = AsteriskDatabase::Parser.new(
       'SOME_KEY'
