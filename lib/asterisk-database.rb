@@ -1,7 +1,6 @@
 module AsteriskDatabase
   class Parser
     DATABASE_KEY_VALUE_REGEX = /\A(\/\w+)+\s+:\s+(.*)\z/
-    ESCAPE_SEQUENCE_REGEX = /\A\e\[\d;\d{1,2}(;\d{1,2})?m/
 
     # TODO: change this to host, key
     # so like 'fsa', 'CNAM'
@@ -36,14 +35,18 @@ module AsteriskDatabase
       index = nil
 
       raw_output.lines.each do |line|
-        line.gsub!(ESCAPE_SEQUENCE_REGEX, '')
-
         next unless line.start_with?('/')
 
         state = :looking_for_slash
         keys.clear
         current_value.clear
 
+        # Parse the line. Looking for keys which are /-separated and finally
+        # the value. For instance:
+        #   /Key1/Key2/Key3: some_value.
+        # The result would be:
+        #   keys          == ['Key1', 'Key2', 'Key3']
+        #   current_value == 'some_value'
         line.strip.chars.each do |char|
           case state
           when :looking_for_slash
@@ -93,7 +96,7 @@ module AsteriskDatabase
           index += 1
 
           if index == number_of_keys
-            acc[sub_key] = current_value
+            acc[sub_key] = current_value.clone
           else
             acc[sub_key] ||= ActiveSupport::HashWithIndifferentAccess.new
           end
@@ -143,7 +146,7 @@ module AsteriskDatabase
       if local?
         ''
       else
-        %x[#{ssh_bin} #{ssh_option_string} #{ssh_destination} "#{asterisk_bin} -rx 'database show #{@database_key}'"].strip
+        %x[#{ssh_bin} #{ssh_option_string} #{ssh_destination} "#{asterisk_bin} -nrx 'database show #{@database_key}'"].strip
       end
     end
   end

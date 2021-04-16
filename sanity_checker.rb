@@ -1,6 +1,14 @@
 require 'asterisk-database'
 require 'active_support/core_ext/hash/indifferent_access'
 
+parser = AsteriskDatabase::Parser.new(
+  'CFV',
+  'nb-mg0',
+  asterisk_bin: '/usr/asterisk-1.6.1/sbin/asterisk'
+)
+puts parser.parse
+
+=begin
 config = {
   mg0: {
     asterisk_bin:      '/usr/sbin/asterisk',
@@ -88,3 +96,4 @@ config.slice(:'nb-mg0', :'nb-mg1', :'nb-mg2', :'nb-mg3', :'nb-mg4', :'nb-mg5', :
     puts "#{hostname}: \033[0;31mFAIL\033[0;0m"
   end
 end
+=end
